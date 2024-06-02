@@ -1,5 +1,5 @@
 Flask==2.0.2
-Werkzeug>=2.0.1
+Werkzeug==1.0.1  # Pinning Werkzeug to version 1.0.1, which contains the url_quote function
 pandas
 scikit-learn>=0.24.2
 tensorflow==2.16.1
