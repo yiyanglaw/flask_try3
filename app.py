@@ -1,9 +1,8 @@
 from flask import Flask, request
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import TextVectorization
 import tensorflow as tf
-from tensorflow.keras.layers import Embedding, Conv1D, MaxPooling1D, Bidirectional, GlobalAveragePooling1D, Dropout, Dense
+from tensorflow.keras.layers import Embedding, Conv1D, MaxPooling1D, Bidirectional, GlobalAveragePooling1D, Dropout, Dense, TextVectorization
 from tensorflow.keras.models import Sequential
 import re
 import string
@@ -32,14 +31,10 @@ data['Message'] = data['Message'].apply(preprocess_text)
 # Split the data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(data['Message'], data['Category'], test_size=0.2, random_state=42)
 
-# Tokenize and pad the sequences
-vectorizer = TextVectorization(max_tokens=10000, output_sequence_length=100)
-vectorizer.adapt(X_train.values)
-
 # Define the model architecture
 model = Sequential([
-    vectorizer,
-    Embedding(len(vectorizer.get_vocabulary()), 100, input_length=100),
+    TextVectorization(max_tokens=10000, output_sequence_length=100),
+    Embedding(10000, 100, input_length=100),
     Conv1D(128, 5, padding='valid', activation='relu', strides=1),
     MaxPooling1D(),
     Bidirectional(tf.keras.layers.LSTM(128, return_sequences=True)),
@@ -67,7 +62,7 @@ def preprocess_text_for_prediction(text):
 def predict_spam():
     text = request.form['text']
     processed_text = preprocess_text_for_prediction(text)
-    sequence = vectorizer([processed_text])
+    sequence = tf.constant([processed_text])
     prediction = model.predict(sequence)[0][0]
     if prediction > 0.5:
         result = 'Spam'
