@@ -1,7 +1,7 @@
 from flask import Flask, request
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import TextVectorization
+from tensorflow.keras.layers.experimental.preprocessing import TextVectorization
 import tensorflow as tf
 from tensorflow.keras.layers import Embedding, Conv1D, MaxPooling1D, Bidirectional, GlobalAveragePooling1D, Dropout, Dense
 from tensorflow.keras.models import Sequential
