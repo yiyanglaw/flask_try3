@@ -36,9 +36,12 @@ X_train, X_test, y_train, y_test = train_test_split(data['Message'], data['Categ
 vectorizer = TextVectorization(max_tokens=10000, output_sequence_length=100)
 vectorizer.adapt(X_train.values)
 
+# Tokenize and pad the sequences
+X_train_processed = vectorizer(X_train.values).numpy()
+X_test_processed = vectorizer(X_test.values).numpy()
+
 # Define the model architecture
 model = Sequential([
-    vectorizer,
     Embedding(len(vectorizer.get_vocabulary()), 100, input_length=100),
     Conv1D(128, 5, padding='valid', activation='relu', strides=1),
     MaxPooling1D(),
@@ -55,7 +58,7 @@ model = Sequential([
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
 # Train the model
-model.fit(X_train, y_train, epochs=10, batch_size=64, validation_data=(X_test, y_test))
+model.fit(X_train_processed, y_train, epochs=10, batch_size=64, validation_data=(X_test_processed, y_test))
 
 # Define text preprocessing function for prediction
 def preprocess_text_for_prediction(text):
