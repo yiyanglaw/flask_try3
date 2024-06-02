@@ -5,3 +5,5 @@ scikit-learn>=0.24.2
 tensorflow==2.16.1
 numpy
 Cython>=0.29.24
+Markupsafe==2.1.5  # Pinning Markupsafe to version 2.1.5
+
