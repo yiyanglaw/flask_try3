@@ -1,10 +1,15 @@
 from flask import Flask, request
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import classification_report
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+from keras.models import Sequential
+from keras.layers import Dense, LSTM, Embedding, SpatialDropout1D
+from keras.callbacks import EarlyStopping
 import re
 import string
 
@@ -16,47 +21,57 @@ data = pd.read_csv('sms_3.csv')
 # Fill missing values with an empty string
 data['Message'] = data['Message'].fillna('')
 
-data['Spam'] = data['Category'].apply(lambda x: 1 if x == 'spam' else 0)
+# Encode labels
+label_encoder = LabelEncoder()
+data['Spam'] = label_encoder.fit_transform(data['Category'])
 
 X_train, X_test, y_train, y_test = train_test_split(data.Message, data.Spam, test_size=0.25)
 
-# Tokenize the text data
-tokenizer = Tokenizer()
-tokenizer.fit_on_texts(X_train)
-
-# Convert text to sequences
-X_train_seq = tokenizer.texts_to_sequences(X_train)
-X_test_seq = tokenizer.texts_to_sequences(X_test)
-
-# Pad sequences to ensure uniform length
-max_length = 100  # Adjust as needed
-X_train_pad = pad_sequences(X_train_seq, maxlen=max_length, padding='post')
-X_test_pad = pad_sequences(X_test_seq, maxlen=max_length, padding='post')
-
-# Build the LSTM model
-model = Sequential()
-model.add(Embedding(len(tokenizer.word_index) + 1, 128, input_length=max_length))
-model.add(LSTM(64))
-model.add(Dense(1, activation='sigmoid'))
-
-model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-
-# Training the model
-model.fit(X_train_pad, y_train, epochs=1, batch_size=64, validation_data=(X_test_pad, y_test))
-
+# Preprocessing function
 def preprocess_text(text):
     text = text.translate(str.maketrans('', '', string.punctuation)).lower()
     text = re.sub(r'\W+', ' ', text)
     return text
 
+# GridSearch parameters
+params = {
+    'tfidf__max_features': [1000, 2000, 3000],
+    'tfidf__ngram_range': [(1, 1), (1, 2), (2, 2)],
+    'clf__epochs': [10, 20, 30],
+    'clf__batch_size': [32, 64, 128]
+}
+
+# Create a pipeline with TF-IDF vectorizer and LSTM classifier
+clf = Pipeline([
+    ('tfidf', TfidfVectorizer(preprocessor=preprocess_text)),
+    ('clf', Sequential([
+        Embedding(input_dim=10000, output_dim=128, input_length=100),
+        SpatialDropout1D(0.2),
+        LSTM(100, dropout=0.2, recurrent_dropout=0.2),
+        Dense(1, activation='sigmoid')
+    ]))
+])
+
+# GridSearchCV
+grid_search = GridSearchCV(clf, params, cv=3, n_jobs=-1)
+
+# Training the model
+grid_search.fit(X_train, y_train)
+
+# Best parameters
+best_params = grid_search.best_params_
+print("Best parameters:", best_params)
+
+# Evaluation
+y_pred = grid_search.predict(X_test)
+print(classification_report(y_test, y_pred, target_names=label_encoder.classes_))
+
 @app.route('/predict_spam', methods=['POST'])
 def predict_spam():
     text = request.form['text']
     processed_text = preprocess_text(text)
-    sequence = tokenizer.texts_to_sequences([processed_text])
-    padded_sequence = pad_sequences(sequence, maxlen=max_length, padding='post')
-    prediction = model.predict(padded_sequence)[0][0]
-    if prediction < 0.5:
+    prediction = grid_search.predict([processed_text])[0]
+    if prediction == 0:
         result = 'Ham (Not Spam)'
     else:
         result = 'Spam'
