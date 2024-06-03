@@ -10,7 +10,12 @@ from nltk.stem import PorterStemmer
 import re
 import numpy as np
 
+
+
 app = Flask(__name__)
+
+nltk.download('stopwords')
+
 
 # Load the data for training
 data = pd.read_csv('sms_3.csv')
