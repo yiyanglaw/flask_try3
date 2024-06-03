@@ -2,7 +2,7 @@ Flask>=2.0.1
 Werkzeug>=2.0.1
 pandas
 scikit-learn==1.2.1
-tensorflow==2.13.1
 numpy
 Cython>=0.29.24
-keras==2.6.0
+nltk
+
