@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
+from torch.nn.utils.rnn import pad_sequence
 
 app = Flask(__name__)
 
@@ -45,9 +46,13 @@ y = data['Spam'].values
 # Split the data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
 
+# Pad sequences to make them uniform in length
+X_train_padded = pad_sequence([torch.tensor(x) for x in X_train], batch_first=True)
+X_test_padded = pad_sequence([torch.tensor(x) for x in X_test], batch_first=True)
+
 # Create PyTorch datasets and data loaders
-train_data = TensorDataset(torch.tensor([x for x in X_train]), torch.tensor(y_train))
-test_data = TensorDataset(torch.tensor([x for x in X_test]), torch.tensor(y_test))
+train_data = TensorDataset(X_train_padded, torch.tensor(y_train))
+test_data = TensorDataset(X_test_padded, torch.tensor(y_test))
 batch_size = 64
 train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
@@ -79,7 +84,7 @@ criterion = nn.BCEWithLogitsLoss()
 optimizer = optim.Adam(model.parameters())
 
 # Train the model
-num_epochs = 10
+num_epochs = 1
 for epoch in range(num_epochs):
     model.train()
     train_loss = 0.0
@@ -130,3 +135,4 @@ def predict_spam_route():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000,debug=False)
+
