@@ -42,7 +42,7 @@ model.add(Dense(1, activation='sigmoid'))
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 # Training the model
-model.fit(X_train_pad, y_train, epochs=5, batch_size=64, validation_data=(X_test_pad, y_test))
+model.fit(X_train_pad, y_train, epochs=1, batch_size=64, validation_data=(X_test_pad, y_test))
 
 def preprocess_text(text):
     text = text.translate(str.maketrans('', '', string.punctuation)).lower()
