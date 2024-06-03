@@ -16,6 +16,7 @@ import numpy as np
 app = Flask(__name__)
 
 nltk.download('stopwords')
+nltk.download('punkt')
 
 
 # Load the data for training
